@@ -222,6 +222,8 @@
 #   Minimum number of slaves master will remain connected with, for another
 #   slave to migrate to a master which is no longer covered by any slave.
 #   Only set if cluster_enabled is true
+# @param cluster_allow_reads_when_down
+# allow reads from cluster when a shard is down
 # @param instances
 #   Iterate through multiple instance configurations
 # @acllog_max_length
@@ -301,6 +303,7 @@ class redis (
   Optional[String] $requirepass                                  = undef,
   Boolean $save_db_to_disk                                       = true,
   Hash $save_db_to_disk_interval                                 = { '900' => '1', '300' => '10', '60' => '10000' },
+  Boolean $remove_all_save_points                                = false,
   Boolean $service_enable                                        = true,
   Stdlib::Ensure::Service $service_ensure                        = 'running',
   String[1] $service_group                                       = 'redis',
@@ -332,10 +335,14 @@ class redis (
   Integer[1] $cluster_node_timeout                               = 5000,
   Integer[0] $cluster_slave_validity_factor                      = 0,
   Boolean $cluster_require_full_coverage                         = true,
+  Boolean $cluster_allow_reads_when_down                         = false,
   Integer[0] $cluster_migration_barrier                          = 1,
   Hash[String[1], Hash] $instances                               = {},
-  Integer[0] $acllog_max_length                                  = 128,
+  Optional[Integer[0]] $acllog_max_length                        = 128,
   Optional[String] $aclfile                                       = undef,
+  Hash $acls                                                     = {},
+  Optional[Integer[0]] $iothreads                                = undef,
+  Optional[String] $iothreads_do_reads                           = undef,
 ) inherits redis::params {
   if $package_ensure =~ /^([0-9]+:)?[0-9]+\.[0-9]/ {
     if ':' in $package_ensure {

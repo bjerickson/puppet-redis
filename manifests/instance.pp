@@ -240,7 +240,7 @@ define redis::instance (
   Boolean $repl_disable_tcp_nodelay                              = $redis::repl_disable_tcp_nodelay,
   Integer[1] $repl_ping_slave_period                             = $redis::repl_ping_slave_period,
   Integer[1] $repl_timeout                                       = $redis::repl_timeout,
-  Boolean $rdb_del_sync_files                                    = $redis::rdb_del_sync_files,
+  Boolean $rdb_del_sync_files                                     = $redis::rdb_del_sync_files,
   Boolean $repl_diskless_sync                                    = $redis::repl_diskless_sync,
   Integer[0] $repl_diskless_sync_delay                           = $redis::repl_diskless_sync_delay,
   String[0] $repl_diskless_load                                  = $redis::repl_diskless_load,
@@ -249,6 +249,7 @@ define redis::instance (
   Optional[String] $requirepass                                  = $redis::requirepass,
   Boolean $save_db_to_disk                                       = $redis::save_db_to_disk,
   Hash $save_db_to_disk_interval                                 = $redis::save_db_to_disk_interval,
+  Boolean $remove_all_save_points                                = $redis::remove_all_save_points,
   String[1] $service_user                                        = $redis::service_user,
   Integer[0] $set_max_intset_entries                             = $redis::set_max_intset_entries,
   Integer[0] $slave_priority                                     = $redis::slave_priority,
@@ -273,6 +274,7 @@ define redis::instance (
   Integer[1] $cluster_node_timeout                               = $redis::cluster_node_timeout,
   Integer[0] $cluster_slave_validity_factor                      = $redis::cluster_slave_validity_factor,
   Boolean $cluster_require_full_coverage                         = $redis::cluster_require_full_coverage,
+  Boolean $cluster_allow_reads_when_down                         = $redis::cluster_allow_reads_when_down,
   Integer[0] $cluster_migration_barrier                          = $redis::cluster_migration_barrier,
   String[1] $service_name                                        = "redis-server-${name}",
   Stdlib::Ensure::Service $service_ensure                        = $redis::service_ensure,
@@ -283,8 +285,11 @@ define redis::instance (
   Stdlib::Absolutepath $pid_file                                 = "/var/run/redis/redis-server-${name}.pid",
   Variant[Stdlib::Absolutepath, Enum['']] $unixsocket            = "/var/run/redis/redis-server-${name}.sock",
   Stdlib::Absolutepath $workdir                                  = "${redis::workdir}/redis-server-${name}",
-  Integer[0] $acllog_max_length                                  = $redis::acllog_max_length,
+  Optional[Integer[0]] $acllog_max_length                        = $redis::acllog_max_length,
   Optional[String] $aclfile                                       = $redis::aclfile,
+  Hash $acls                                                     = $redis::acls,
+  Optional[Integer[0]] $iothreads                                = $redis::iothreads,
+  Optional[String] $iothreads_do_reads                           = $redis::iothreads_do_reads,
 ) {
   if $title == 'default' {
     $redis_file_name_orig = $config_file_orig
@@ -337,6 +342,15 @@ define redis::instance (
           Exec["cp -p ${redis_file_name_orig} ${redis_file_name}"],
         ],
       }
+    }
+  }
+  if $aclfile {
+    file { $aclfile:
+      ensure  => file,
+      owner   => $config_owner,
+      group   => $config_group,
+      mode    => $config_file_mode,
+      content => template('redis/users.erb'),
     }
   }
 

@@ -320,6 +320,9 @@ always-show-logo yes
 save <%= seconds -%> <%= key_change -%> <%= "\n" -%>
 <%- end -%>
 <% end %>
+<% if @remove_all_save_points %>
+save ""
+<% end %>
 
 # By default Redis will stop accepting writes if RDB snapshots are enabled
 # (at least one save point) and the latest background save failed.
@@ -1050,7 +1053,8 @@ lazyfree-lazy-user-del no
 # enable I/O threads use the following configuration directive:
 #
 # io-threads 4
-#
+<% if @iothreads -%>io-threads <%= @iothreads %><% end -%>
+
 # Setting io-threads to 1 will just use the main thread as usual.
 # When I/O threads are enabled, we only use threads for writes, that is
 # to thread the write(2) syscall and transfer the client buffers to the
@@ -1059,7 +1063,8 @@ lazyfree-lazy-user-del no
 # it to yes:
 #
 # io-threads-do-reads no
-#
+<%if @iothreads_do_reads %>io-threads-do-reads <%= @iothreads_do_reads%><% end -%>
+
 # Usually threading reads doesn't help much.
 #
 # NOTE 1: This configuration directive cannot be changed at runtime via
@@ -1268,7 +1273,6 @@ cluster-config-file <%= @cluster_config_file %>
 # for it to be considered in failure state.
 # Most other internal time limits are a multiple of the node timeout.
 #
-# cluster-node-timeout 15000
 cluster-node-timeout <%= @cluster_node_timeout %>
 
 # A replica of a failing master will avoid to start a failover if its data
@@ -1375,6 +1379,7 @@ cluster-require-full-coverage <% if @cluster_require_full_coverage -%>yes<% else
 # Without a quorum of masters, slot ownership will not change automatically.
 #
 # cluster-allow-reads-when-down no
+cluster-allow-reads-when-down <% if @cluster_allow_reads_when_down -%>yes<% else -%>no<% end %>
 
 # In order to setup your cluster make sure to read the documentation
 # available at http://redis.io web site.
@@ -1901,3 +1906,9 @@ jemalloc-bg-thread yes
 #
 # Set bgsave child process to cpu affinity 1,10,11
 # bgsave_cpulist 1,10-11
+
+<% if !@aclfile %>
+<%- @acls.each do |user, properties| -%>
+user <%= user -%> <%= properties["status"] -%> <%= properties["acl_rules"] -%> ><%= properties["password"] -%> <%= "\n" -%>
+<%- end -%>
+<% end %>
